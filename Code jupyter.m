@@ -38,8 +38,8 @@
 t = 1; % in
 E = 30*10^6; %psi
 v = 0.3; 
-n_x = 1; 
-n_y = 1;
+n_x = 80; 
+n_y = 80;
 x0 = 0;
 y0 = 0;
 x1 = 20;
@@ -77,7 +77,7 @@ Q = NaN(ndfo,1);
 %Value of L
 %Because of the problem L es divided in the y direction 
 L = (y1-y0)/n_y;
-sign_value = -1; % (-1) for comprension and (+1) for traction 
+sign_value = 1; % (-1) for comprension and (+1) for traction 
 %Node force 
 node_force = sign_value*p*L*t/2;
 
@@ -119,6 +119,22 @@ for i = 1:n_x
                 Q(dfo1) = q;
             end    
         end
+        %Cero forces
+        
+        if (i>1)&&(i<=n_x)
+            n0 = node_numeration(i,j);
+            df0 = [2*n0-1,2*n0];
+            q = [0;0];
+            Q(df0) = q;
+        end
+        
+        %Additionally
+        if (i>1)&&(j == n_y)
+            n0 = node_numeration(i,j+1);
+            df0 = [2*n0-1,2*n0];
+            q = [0;0];
+            Q(df0) = q;
+        end
         
         %Calculation of local stiffness matrix and assembly to global stiffness matrix 
         %The local stiffness matrix was coded in the file: "local_stiffness_matrix.m"
@@ -153,15 +169,65 @@ for i = 1:n_x
         K(dfo2,dfo2) = K(dfo2,dfo2) + k2;
     end
 end
-Q
-D
 
 % %% [markdown]
 % ## Solution of the equation Q = K*D
 
 % %%
-%Identificaction of known and unknown dfo 
+%We subdivided the matrices 
+%u is used for unknown and k for known 
+D_k_positions = find(~isnan(D)); %The displacements that are imposed
+D_u_positions = find(isnan(D)); %The displacements that we don't known
 
+K_uu = K(D_u_positions,D_u_positions);
+K_uk = K(D_u_positions,D_k_positions);
+K_kk = K(D_k_positions,D_k_positions);
+K_ku = K(D_k_positions,D_u_positions);
+
+D_u = D(D_u_positions);
+D_k = D(D_k_positions);
+Q_k = Q(D_u_positions);%Values of Q in the dfo where the displacements are not known 
+
+D_u = K_uu\(Q_k-K_uk*D_k);
+Q_u = K_kk*D_k+K_ku*D_u;
+
+D(D_u_positions) = D_u;
+Q(D_k_positions) = Q_u;
+
+% %% [markdown]
+% ## Graphics 
+
+% %%
+%Coordinates with displacements 
+
+%Original Coordinates
+[X_grid,Y_grid] = meshgrid(x,y);
+X_grid_tra = X_grid';
+Y_grid_tra = Y_grid';
+x_points = X_grid_tra(:);
+y_points = Y_grid_tra(:);
+%Displacements of u for x with corresponds to the odd dfos and v for y with even dfos. 
+u = D(1:2:end);
+v = D(2:2:end);
+displacement_scale = 1000;%to diferentiate te results
+
+%Displacements in x and y 
+x_displaced = x_points +u*displacement_scale;
+y_displaced = y_points +v*displacement_scale;
+
+%Figures 
+figure;
+hold on; 
+% puntos originales y desplazados
+plot(X_grid(:), Y_grid(:), 'bo', 'MarkerFaceColor', 'b');
+plot(x_displaced, y_displaced, 'ro', 'MarkerFaceColor', 'r');
+hold off; 
+title('Original Grid vs Deformed Grid');
+xlabel('X coordinates');
+ylabel('Y coordinates');
+legend('Original nodes','Deformed nodes');
+note = sprintf('Displacement scale: %d', displacement_scale);
+annotation('textbox', [0.1, 0.05, 0.8, 0.05], 'String', note);
 
 % %%
 %{%Replacing the NaN for incognites 
@@ -191,3 +257,5 @@ K = K*(0.91/375000);
 K;
 %}
 D
+
+% %%
