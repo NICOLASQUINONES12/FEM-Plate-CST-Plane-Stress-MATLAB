@@ -20,7 +20,7 @@
 % The problem is show in the figure 6-16. 
 
 % %% [markdown]
-% ![Figure 1](figure1.jpg)
+% ![Figure 1](figure1.JPG)
 
 % %% [markdown]
 % This problem is show in the chapter 6.5 of the book: *A firts Course in the Finite Element Method* written by Daryl L. Logan. In this 
