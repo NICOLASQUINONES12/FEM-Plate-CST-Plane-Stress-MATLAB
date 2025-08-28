@@ -38,8 +38,8 @@
 t = 1; % in
 E = 30*10^6; %psi
 v = 0.3; 
-n_x = 80; 
-n_y = 80;
+n_x = 100; 
+n_y = 100;
 x0 = 0;
 y0 = 0;
 x1 = 20;
@@ -49,6 +49,22 @@ y = linspace(y0,y1,n_y+1);
 %Surface Forces
 p = 1000;
 
+
+% %% [markdown]
+% ## Solution as approximation of one element 
+
+% %% [markdown]
+% If one element is used, the displacement is going to be:
+% $$
+% \delta = \frac{P L}{E A}
+% $$
+% This result can be used to compare the values of the CST method with one element method. This value is situable for displacements in $x$ ($U_{xy}$) in the graphics. 
+
+% %%
+A = (y1-y0)*t;
+L = (x1-x0);
+displacement_x_one_element = p*A*L/(E*A);
+displacement_x_one_element
 
 % %% [markdown]
 % ## Formulation and Assembly 
@@ -198,6 +214,117 @@ Q(D_k_positions) = Q_u;
 % ## Graphics 
 
 % %%
+%How displacement change inside the element 
+%For each element 
+n_element_x = 10; 
+n_element_y = 10;
+U_x_y = zeros(n_y*n_element_y + 1, n_x*n_element_x + 1);
+V_x_y = zeros(n_y*n_element_y + 1, n_x*n_element_x + 1);
+
+for i = 1:(n_x)
+    for j = 1:(n_y)
+        %The rectangle (i,j,i+1,j+1) is divided into two triangles
+        %counterclockwise the area is positive
+        %Node numeration in the small rectangle 
+        node_0 = node_numeration(i,j);
+        node_1 = node_numeration(i+1,j);
+        node_2 = node_numeration(i,j+1);
+        node_3 = node_numeration(i+1,j+1);
+        
+        %First triangle
+        x0 = [x(i),x(i+1),x(i+1)];
+        y0 = [y(j),y(j),y(j+1)];
+        u0 = [D(2*node_0-1),D(2*node_1-1),D(2*node_3-1)];
+        v0 = [D(2*node_0),D(2*node_1),D(2*node_3)];
+        
+        %Second triangle
+        x1 = [x(i),x(i+1),x(i)];
+        y1 = [y(j),y(j+1),y(j+1)];
+        u1 = [D(2*node_0-1),D(2*node_3-1),D(2*node_2-1)];
+        v1 = [D(2*node_0),D(2*node_3),D(2*node_2)];
+        
+        %The limits for the rectangle
+        xmin = min([x0,x1]);
+        ymin = min([y0,y1]);
+        xmax = max([x0,x1]);
+        ymax = max([y0,y1]);
+        local_x = linspace(xmin,xmax,n_element_x+1);
+        local_y = linspace(ymin,ymax,n_element_y+1);
+        u_local = zeros(length(local_y),length(local_x));
+        v_local = zeros(length(local_y),length(local_x));
+        
+        %First triangle
+        for k = 1:(n_element_y+1)   
+            for m = 1:(n_element_x+1)
+                %Verification that the point is inside the triangle
+                lambda1 = barycentric_lambda(x0(1), y0(1), x0(2), y0(2), x0(3), y0(3), local_x(m), local_y(k));
+                lambda2 = barycentric_lambda(x0(2), y0(2), x0(3), y0(3), x0(1), y0(1), local_x(m), local_y(k));
+                lambda3 = barycentric_lambda(x0(3), y0(3), x0(1), y0(1), x0(2), y0(2), local_x(m), local_y(k));
+                if (lambda1<0) || (lambda2<0) || (lambda3<0)
+                    continue; 
+                end
+                u_local(k,m) = u_x_y(u0(1),u0(2),u0(3),x0(1),y0(1),x0(2),y0(2),x0(3),y0(3),local_x(m), local_y(k));
+                v_local(k,m) = u_x_y(v0(1),v0(2),v0(3),x0(1),y0(1),x0(2),y0(2),x0(3),y0(3),local_x(m), local_y(k));
+            end
+        end
+        
+        %Second triangle
+        for k = 1:(n_element_y+1)     
+            for m = 1:(n_element_x+1)
+                %Verification that the point is inside the triangle
+                lambda1 = barycentric_lambda(x1(1), y1(1), x1(2), y1(2), x1(3), y1(3), local_x(m), local_y(k));
+                lambda2 = barycentric_lambda(x1(2), y1(2), x1(3), y1(3), x1(1), y1(1), local_x(m), local_y(k));
+                lambda3 = barycentric_lambda(x1(3), y1(3), x1(1), y1(1), x1(2), y1(2), local_x(m), local_y(k));
+                if (lambda1<0) || (lambda2<0) || (lambda3<0)
+                    continue; 
+                end
+                u_local(k,m) = u_x_y(u1(1),u1(2),u1(3),x1(1),y1(1),x1(2),y1(2),x1(3),y1(3),local_x(m), local_y(k));
+                v_local(k,m) = u_x_y(v1(1),v1(2),v1(3),x1(1),y1(1),x1(2),y1(2),x1(3),y1(3),local_x(m), local_y(k));
+            end
+        end
+        
+        %Assembly
+        row_start = (j-1)*n_element_y + 1;
+        row_end = j*n_element_y + 1;
+        col_start = (i-1)*n_element_x + 1;
+        col_end = i*n_element_x + 1;
+
+        U_x_y(row_start:row_end, col_start:col_end) = u_local;
+        V_x_y(row_start:row_end, col_start:col_end) = v_local;
+    end
+end
+
+%Figures U_x_y V_x_y
+
+x_plot = linspace(min(x),max(x),n_x*n_element_x+1);
+y_plot = linspace(min(y),max(y),n_y*n_element_y+1);
+[X,Y] = meshgrid(x_plot, y_plot);
+
+%With this code the values in the matrix U_x_y and V_x_y in the final column and final row are lost in the graphic because the rectangle
+%take its color using the information of the left lower node. 
+figure;
+subplot(2,1,1);
+pcolor(X, Y, U_x_y);
+axis equal tight;
+shading flat; 
+colorbar;
+title('U_x_y Distribution');
+xlabel('X coordinate');
+ylabel('Y coordinate');
+y_text_position = min(y_points) - (max(y_points) - min(y_points)) * 0.22; 
+text(min(x_points), y_text_position, sprintf('Displacement of x as one element : %.3e', displacement_x_one_element), 'FontSize', 10, 'Interpreter', 'none');
+
+subplot(2,1,2);
+pcolor(X, Y, V_x_y);
+axis equal tight;
+shading flat;
+colorbar;
+title('V_x_y Distribution');
+xlabel('X coordinate');
+ylabel('Y coordinate');
+
+
+% %%
 %Coordinates with displacements 
 
 %Original Coordinates
@@ -218,44 +345,20 @@ y_displaced = y_points +v*displacement_scale;
 %Figures 
 figure;
 hold on; 
-% puntos originales y desplazados
+% original nodal points and displaced nodal points 
 plot(X_grid(:), Y_grid(:), 'bo', 'MarkerFaceColor', 'b');
 plot(x_displaced, y_displaced, 'ro', 'MarkerFaceColor', 'r');
 hold off; 
-title('Original Grid vs Deformed Grid');
-xlabel('X coordinates');
-ylabel('Y coordinates');
+
+%Titles, axes titles, legends and texts
+
+h = title('Original Grid vs Deformed Grid', 'Units', 'Normalized');
+set(h, 'Position', [0.5, 1.05, 0]);
+
+xlabel('X coordinates','FontSize', 12);
+ylabel('Y coordinates','FontSize', 12);
 legend('Original nodes','Deformed nodes');
-note = sprintf('Displacement scale: %d', displacement_scale);
-annotation('textbox', [0.1, 0.05, 0.8, 0.05], 'String', note);
-
-% %%
-%{%Replacing the NaN for incognites 
-%Identification of the values that are NaN in the code
-[x_nan_Q] = find(isnan(Q));
-[y_nan_D] = find(isnan(D));
-%Creating the incognites
-%in Q: 
-x_Q = sym(zeros(length(x_nan_Q),1));
-for i = 1:length(x_nan_Q)
-    x_Q(i) = sym(sprintf('Q%d',x_nan_Q(i)));
-end
-%in D:
-y_D = sym(zeros(length(y_nan_D),1));
-for i = 1:length(y_nan_D)
-    y_D(i) = sym(sprintf('D%d',y_nan_D(i)));
-end
-x_Q
-y_D
-%}
-
-%{K = full(K);
-miOrdenColumnas = [1 2 5 6 7 8 3 4];
-miOrdenFilas = [1 2 5 6 7 8 3 4];
-K = K(miOrdenFilas, miOrdenColumnas);
-K = K*(0.91/375000);
-K;
-%}
-D
+y_text_position = min(y_points) - (max(y_points) - min(y_points)) * 0.1; 
+text(min(x_points), y_text_position, sprintf('Displacement Scale: %d', displacement_scale), 'FontSize', 10, 'Interpreter', 'none');
 
 % %%
