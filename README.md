@@ -54,19 +54,18 @@ Example results:
 
 ## Repository Structure
 
-├── fem_cst.ipynb                # Main Jupyter Notebook
-├── fem_cst.m                    # Equivalent MATLAB script
-├── barycentric_lambda.m         # Function for barycentric lambda for a triangle (MATLAB)
-├── constitutive_matrix.m        # Function for constitutive matrix (MATLAB)
-├── local_stiffness_matrix.m     # Function for local stiffness matrix (MATLAB)
-├── strain_displacement_matrix.m # Function for strain-displacement matrix B (MATLAB)
-├── two_area_triangle.m          # Function to compute area (MATLAB)
-├── u_x_y.m                      # Displacements inside a element, returns a value (MATLAB)
-├── figure1.JPG                  # Example problem image
-├── figure1_u_x_y_example.JPG    # Example result (displacement)
-├── figure2_strain_x_example.JPG # Example result (strain)
-├── figure3_deformed_nodes_example.JPG # Example result (deformed nodes)
-└── README.md                     # Project documentation
+* **`fem_cst.ipynb`**: The main Jupyter Notebook for the project, demonstrating the FEM analysis.
+* **`fem_cst.m`**: An equivalent MATLAB script of the main FEM program.
+* **`barycentric_lambda.m`**: A MATLAB function to compute barycentric coordinates for a triangle.
+* **`constitutive_matrix.m`**: A MATLAB function for generating the material's constitutive matrix.
+* **`local_stiffness_matrix.m`**: A MATLAB function that calculates the local stiffness matrix.
+* **`strain_displacement_matrix.m`**: A MATLAB function that defines the strain-displacement matrix B.
+* **`two_area_triangle.m`**: A MATLAB utility function to compute the area of a triangle.
+* **`u_x_y.m`**: A MATLAB function that determines displacements inside a given element.
+* * **`figure1.JPG`**: An image illustrating the initial problem setup.
+* **`figure1_u_x_y_example.JPG`**: An example image showing the displacement results.
+* **`figure2_strain_x_example.JPG`**: An example image showing the strain results.
+* **`figure3_deformed_nodes_example.JPG`**: An example image of the deformed mesh nodes.
 
 ## Reproducibility
 
