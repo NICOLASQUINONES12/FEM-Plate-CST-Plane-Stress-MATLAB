@@ -20,9 +20,11 @@ This problem is based on chapter 6.5 of the book:
 
 ## Usage
 
-- Open MATLAB.
-- Open the script `fem_cst.m` or the Jupyter Notebook `fem_cst.ipynb` using MATLAB.
-- Run all cells to reproduce the solution.
+Option 1: MATLAB
+Open the `fem_cst.m` script directly in MATLAB and run it. This will execute the code within the MATLAB environment.
+
+Option 2: Jupyter Notebook 
+Open the `fem_cst.ipynb` file in a Jupyter Notebook. This requires that you have a MATLAB kernel configured in your Jupyter environment to execute the code.
 
 ## Example
 
@@ -41,15 +43,24 @@ For a 10×10 mesh with the following values:
 - p = -1000;        % Load [psi]
 - displacement_scale = 1000;
 
-Expected outputs include:
-
-- Displacement in x.
-- Strain in x.
-- Deformed mesh grid. 
+Some Expected outputs include:
+- Graphic of CST Elements in the plate
+- Displacement in x (U_xy)
+- Displacement in y (V_xy)
+- Strain in x
+- Strain in y
+- Shear strain
+- Stress in x
+- Stress in y
+- Shear stress 
+- Deformed mesh grid 
 
 Example results:
+Displacements in x
 ![Displacement in x](figure1_u_x_y_example.JPG)
+Strain in x
 ![Strain in x.](figure2_strain_x_example.JPG)
+Deformed mesh grid 
 ![Deformed mesh grid.](figure_3_deformed_nodes_examples.JPG)
 
 ## Repository Structure
@@ -68,10 +79,12 @@ Example results:
 - `figure3_deformed_nodes_example.JPG`: An example image of the deformed mesh nodes.
 
 ## Reproducibility
+To reproduce the results of this project, follow these steps:
 
-- Clone this repository.
-- Open the MATLAB script or notebook.
-- Run all cells and compare results with the included images.
+1. Clone this repository: Use Git to get a local copy of all the project files.
+2. Open the MATLAB script or notebook: Open fem_cst.m directly in MATLAB or fem_cst.ipynb in a Jupyter environment with a MATLAB kernel.
+3. Run all cells: Execute the entire script or notebook sequentially.
+4. Compare results: The generated output (figures, values) should match the reference images included in the repository.
   
 ## Author
 Developed by Nicolas Quiñones 

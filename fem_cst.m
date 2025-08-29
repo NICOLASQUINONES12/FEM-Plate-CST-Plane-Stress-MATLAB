@@ -456,6 +456,7 @@ ylabel('Y coordinate');
 
 % %%
 %Graphic V_x_y
+figure;
 pcolor(X, Y, V_x_y);
 axis equal tight;
 shading flat;
@@ -466,6 +467,7 @@ ylabel('Y coordinate');
 
 % %%
 %Graphic strain_x
+figure;
 pcolor(X, Y, strain_x);
 axis equal tight;
 shading flat;
@@ -476,6 +478,7 @@ ylabel('Y coordinate');
 
 % %%
 %Graphic strain_y
+figure;
 pcolor(X, Y, strain_y);
 axis equal tight;
 shading flat;
@@ -486,6 +489,7 @@ ylabel('Y coordinate');
 
 % %%
 %Graphic shear_strain
+figure;
 pcolor(X, Y, strain_shear);
 axis equal tight;
 shading flat;
@@ -496,6 +500,7 @@ ylabel('Y coordinate');
 
 % %%
 %Graphic stress_x
+figure;
 pcolor(X, Y, stress_x);
 axis equal tight;
 shading flat;
@@ -506,6 +511,7 @@ ylabel('Y coordinate');
 
 % %%
 %Graphic stress_y
+figure;
 pcolor(X, Y, stress_y);
 axis equal tight;
 shading flat;
@@ -517,6 +523,7 @@ ylabel('Y coordinate');
 
 % %%
 %Graphic shear stress
+figure;
 pcolor(X, Y, tau_x_y);
 axis equal tight;
 shading flat;
