@@ -27,7 +27,7 @@
 % chapter a solution is make by subdivided the plate in two CST. The purpose of this project is to make more divisions considering 400 CST and see the results. 
 
 % %% [markdown]
-% ## Preprocesing 
+% ## Input Variables
 
 % %%
 % Geometry definition 
@@ -38,8 +38,11 @@
 t = 1; % in
 E = 30*10^6; %psi
 v = 0.3; 
-n_x = 100; 
-n_y = 100;
+n_x = 10; 
+n_y = 10;
+%For each element there are additional divisions to calculate the internal stresses and strains
+n_element_x = 5; 
+n_element_y = 5;
 x0 = 0;
 y0 = 0;
 x1 = 20;
@@ -47,7 +50,7 @@ y1 = 10;
 x = linspace(x0,x1,n_x+1); 
 y = linspace(y0,y1,n_y+1); 
 %Surface Forces
-p = 1000;
+p = 1000; %Asumming that positive values are for traction and negative values for comprension 
 
 
 % %% [markdown]
@@ -67,11 +70,63 @@ displacement_x_one_element = p*A*L/(E*A);
 displacement_x_one_element
 
 % %% [markdown]
-% ## Formulation and Assembly 
+% The strain is equal to: 
+% $$
+% \epsilon = \frac{\delta}{L}
+% $$
 
 % %%
-%Assembly 
+strain_x_one_element = displacement_x_one_element/L; 
+strain_x_one_element
 
+% %% [markdown]
+% ## Solution as approximation of FEM with CST elements 
+
+% %% [markdown]
+% The following approach to solve the problem is with Constant Strain Triangles (CST). Plane stress were assumed so the stresses in the z direction are cero.
+%
+% The following image shows the CST mesh for this assembly.
+
+% %%
+if (n_x<=25) || (n_y<=25)
+    [X_gr, Y_gr] = meshgrid(x,y);
+    % Horizontal lines 
+    for i = 1:size(X_gr,1)
+        plot(X_gr(i,:),Y_gr(i,:),'k');
+        hold on
+    end
+    % Vertical lines 
+    for j = 1:size(X_gr,2)
+        plot(X_gr(:,j),Y_gr(:,j),'k');
+        hold on
+    end
+    % Diagonal lines 
+    for i = 1:(size(X_gr,1)-1)
+        for j = 1:(size(X_gr,2)-1)
+            x0 = X_gr(i,j);
+            x1 = X_gr(i+1,j+1);
+            y0 = Y_gr(i,j);
+            y1 = Y_gr(i+1,j+1);
+            x_point = [x0,x1];
+            y_point = [y0,y1];
+            plot(x_point, y_point, 'k');
+            hold on
+        end
+    end
+    title('CST elements');
+    xlabel('x coordinates');
+    ylabel('y coordinates');
+    ax = gca;
+    ax.TickLength = [0 0];
+else
+    disp('The image of CST elements can be shown only if n_x <= 25 and n_y <= 25.');
+    disp('n_x are number of divisions in x and n_y are number or divisions in y.');
+end
+
+% %% [markdown]
+% ## Formulation, Assembly and Solution
+
+% %%
 %Numeration of nodes
 %This function enumerate the nodes from left to right starting in the coordinate (1,1)
 node_numeration = @(i,j) (j-1)*(n_x+1)+i; 
@@ -93,14 +148,17 @@ Q = NaN(ndfo,1);
 %Value of L
 %Because of the problem L es divided in the y direction 
 L = (y1-y0)/n_y;
-sign_value = 1; % (-1) for comprension and (+1) for traction 
 %Node force 
-node_force = sign_value*p*L*t/2;
+node_force = p*L*t/2;
 
-%Assembly
+%Application of the boundary conditions and assembly of the global matrices Q, D and K. 
+
 for i = 1:n_x
     for j = 1:n_y
+    
         %Application of the boundary conditions 
+        %--------------------------------------------------------------------------------%
+        %Displacements are cero in the nodes (1,1) to (1,j+1) - left part of the body. 
         if i == 1
             n0 = node_numeration(i,j);
             dfo0 = [2*n0-1,2*n0];
@@ -115,7 +173,8 @@ for i = 1:n_x
             end
         end 
         
-        %Calculation of surface forces and assembly of the vector of global Forces 
+        %Forces in the right side of the plate 
+        %Calculation of surface forces (from nodes (i+1,1) to (i+1,j+1)) and assembly to the vector of global Forces 
         if i == n_x
             n0 = node_numeration(i+1,j);
             dfo0 = [2*n0-1,2*n0];
@@ -135,8 +194,9 @@ for i = 1:n_x
                 Q(dfo1) = q;
             end    
         end
-        %Cero forces
         
+        %Forces are cero from the nodes (2,1) to (i,j). 
+        %Cero forces
         if (i>1)&&(i<=n_x)
             n0 = node_numeration(i,j);
             df0 = [2*n0-1,2*n0];
@@ -152,8 +212,13 @@ for i = 1:n_x
             Q(df0) = q;
         end
         
+        %The values that appear with NaN in the matrices Q and D are incognites, the values that are already known were replaced in the code above. 
+        
         %Calculation of local stiffness matrix and assembly to global stiffness matrix 
+        %--------------------------------------------------------------------------------%
+        
         %The local stiffness matrix was coded in the file: "local_stiffness_matrix.m"
+        
         %Local nodes transformed to global nodes numeration 
         n1 = node_numeration(i,j);
         n2 = node_numeration(i+1,j);
@@ -186,10 +251,9 @@ for i = 1:n_x
     end
 end
 
-% %% [markdown]
-% ## Solution of the equation Q = K*D
+%Solution of the equation Q = K*D
+%--------------------------------------------------------------------------------%
 
-% %%
 %We subdivided the matrices 
 %u is used for unknown and k for known 
 D_k_positions = find(~isnan(D)); %The displacements that are imposed
@@ -214,12 +278,19 @@ Q(D_k_positions) = Q_u;
 % ## Graphics 
 
 % %%
-%How displacement change inside the element 
-%For each element 
-n_element_x = 10; 
-n_element_y = 10;
+%In this code is calculate the displacements, strains and stresses inside each element
+%--------------------------------------------------------------------------------%
+
 U_x_y = zeros(n_y*n_element_y + 1, n_x*n_element_x + 1);
 V_x_y = zeros(n_y*n_element_y + 1, n_x*n_element_x + 1);
+strain_x = zeros(n_y*n_element_y + 1,n_x*n_element_x + 1);
+strain_y = zeros(n_y*n_element_y + 1,n_x*n_element_x + 1);
+strain_shear = zeros(n_y*n_element_y + 1,n_x*n_element_x + 1);
+stress_x = zeros(n_y*n_element_y + 1,n_x*n_element_x + 1);
+stress_y = zeros(n_y*n_element_y + 1,n_x*n_element_x + 1);
+tau_x_y = zeros(n_y*n_element_y + 1,n_x*n_element_x + 1); 
+%It can be calculate only once: 
+C = constitutive_matrix(E,v);
 
 for i = 1:(n_x)
     for j = 1:(n_y)
@@ -236,12 +307,14 @@ for i = 1:(n_x)
         y0 = [y(j),y(j),y(j+1)];
         u0 = [D(2*node_0-1),D(2*node_1-1),D(2*node_3-1)];
         v0 = [D(2*node_0),D(2*node_1),D(2*node_3)];
+        d0 = [u0(1);v0(1);u0(2);v0(2);u0(3);v0(3)];
         
         %Second triangle
         x1 = [x(i),x(i+1),x(i)];
         y1 = [y(j),y(j+1),y(j+1)];
         u1 = [D(2*node_0-1),D(2*node_3-1),D(2*node_2-1)];
         v1 = [D(2*node_0),D(2*node_3),D(2*node_2)];
+        d1= [u1(1);v1(1);u1(2);v1(2);u1(3);v1(3)];
         
         %The limits for the rectangle
         xmin = min([x0,x1]);
@@ -250,10 +323,25 @@ for i = 1:(n_x)
         ymax = max([y0,y1]);
         local_x = linspace(xmin,xmax,n_element_x+1);
         local_y = linspace(ymin,ymax,n_element_y+1);
+        
+        %Local matrices
+        %local displacements
         u_local = zeros(length(local_y),length(local_x));
         v_local = zeros(length(local_y),length(local_x));
+        %local strains
+        strain_x_local = zeros(length(local_y),length(local_x));
+        strain_y_local = zeros(length(local_y),length(local_x));
+        strain_shear_local = zeros(length(local_y),length(local_x));
+        %local stresses
+        stress_x_local = zeros(length(local_y),length(local_x));
+        stress_y_local = zeros(length(local_y),length(local_x));
+        tau_x_y_local = zeros(length(local_y),length(local_x));
         
         %First triangle
+        B0 = strain_displacement_matrix(x0(1),y0(1),x0(2),y0(2),x0(3),y0(3));
+        eps0 = B0*d0;
+        sig0 = C*eps0;
+        
         for k = 1:(n_element_y+1)   
             for m = 1:(n_element_x+1)
                 %Verification that the point is inside the triangle
@@ -263,12 +351,28 @@ for i = 1:(n_x)
                 if (lambda1<0) || (lambda2<0) || (lambda3<0)
                     continue; 
                 end
+                
+                %to calculate the local displacements inside the triangle. The shape functions had been used. 
                 u_local(k,m) = u_x_y(u0(1),u0(2),u0(3),x0(1),y0(1),x0(2),y0(2),x0(3),y0(3),local_x(m), local_y(k));
                 v_local(k,m) = u_x_y(v0(1),v0(2),v0(3),x0(1),y0(1),x0(2),y0(2),x0(3),y0(3),local_x(m), local_y(k));
+                
+                % to calculate the strains 
+                strain_x_local(k,m) = eps0(1);
+                strain_y_local(k,m) = eps0(2);
+                strain_shear_local(k,m) = eps0(3);
+                
+                %to calculate the stresses
+                stress_x_local(k,m) = sig0(1);
+                stress_y_local(k,m) = sig0(2);
+                tau_x_y_local(k,m) = sig0(3);
             end
         end
         
         %Second triangle
+        B1 = strain_displacement_matrix(x1(1),y1(1),x1(2),y1(2),x1(3),y1(3));
+        eps1 = B1*d1;
+        sig1 = C*eps1;
+        
         for k = 1:(n_element_y+1)     
             for m = 1:(n_element_x+1)
                 %Verification that the point is inside the triangle
@@ -278,8 +382,20 @@ for i = 1:(n_x)
                 if (lambda1<0) || (lambda2<0) || (lambda3<0)
                     continue; 
                 end
+                
+                %to calculate the local displacements inside the triangle. The shape functions had been used. 
                 u_local(k,m) = u_x_y(u1(1),u1(2),u1(3),x1(1),y1(1),x1(2),y1(2),x1(3),y1(3),local_x(m), local_y(k));
                 v_local(k,m) = u_x_y(v1(1),v1(2),v1(3),x1(1),y1(1),x1(2),y1(2),x1(3),y1(3),local_x(m), local_y(k));
+
+                % to calculate the strains 
+                strain_x_local(k,m) = eps1(1);
+                strain_y_local(k,m) = eps1(2);
+                strain_shear_local(k,m) = eps1(3);
+                
+                %to calculate the stresses
+                stress_x_local(k,m) = sig1(1);
+                stress_y_local(k,m) = sig1(2);
+                tau_x_y_local(k,m) = sig1(3);
             end
         end
         
@@ -288,22 +404,31 @@ for i = 1:(n_x)
         row_end = j*n_element_y + 1;
         col_start = (i-1)*n_element_x + 1;
         col_end = i*n_element_x + 1;
-
+        
         U_x_y(row_start:row_end, col_start:col_end) = u_local;
         V_x_y(row_start:row_end, col_start:col_end) = v_local;
+        strain_x(row_start:row_end, col_start:col_end) = strain_x_local;
+        strain_y(row_start:row_end, col_start:col_end) = strain_y_local;
+        strain_shear(row_start:row_end, col_start:col_end) = strain_shear_local;
+        stress_x(row_start:row_end, col_start:col_end) = stress_x_local;
+        stress_y(row_start:row_end, col_start:col_end) = stress_y_local;
+        tau_x_y(row_start:row_end, col_start:col_end) = tau_x_y_local;
     end
 end
 
-%Figures U_x_y V_x_y
+%Figures plot
 
 x_plot = linspace(min(x),max(x),n_x*n_element_x+1);
 y_plot = linspace(min(y),max(y),n_y*n_element_y+1);
 [X,Y] = meshgrid(x_plot, y_plot);
 
-%With this code the values in the matrix U_x_y and V_x_y in the final column and final row are lost in the graphic because the rectangle
-%take its color using the information of the left lower node. 
+
+
+% %%
+%Importan annotation: When it is used pcolor to graph the values of the matrices U_x_y, V_x_y, etc., the values at the final row
+%and final column are lost because the color is taken from the left lower side of the grid. 
+%--------------------------------------------------------------------------------%
 figure;
-subplot(2,1,1);
 pcolor(X, Y, U_x_y);
 axis equal tight;
 shading flat; 
@@ -311,10 +436,9 @@ colorbar;
 title('U_x_y Distribution');
 xlabel('X coordinate');
 ylabel('Y coordinate');
-y_text_position = min(y_points) - (max(y_points) - min(y_points)) * 0.22; 
-text(min(x_points), y_text_position, sprintf('Displacement of x as one element : %.3e', displacement_x_one_element), 'FontSize', 10, 'Interpreter', 'none');
 
-subplot(2,1,2);
+% %%
+%Graphic V_x_y
 pcolor(X, Y, V_x_y);
 axis equal tight;
 shading flat;
@@ -323,6 +447,66 @@ title('V_x_y Distribution');
 xlabel('X coordinate');
 ylabel('Y coordinate');
 
+% %%
+%Graphic strain_x
+pcolor(X, Y, strain_x);
+axis equal tight;
+shading flat;
+colorbar;
+title('strain_x');
+xlabel('X coordinate');
+ylabel('Y coordinate');
+
+% %%
+%Graphic strain_y
+pcolor(X, Y, strain_y);
+axis equal tight;
+shading flat;
+colorbar;
+title('strain_y');
+xlabel('X coordinate');
+ylabel('Y coordinate');
+
+% %%
+%Graphic shear_strain
+pcolor(X, Y, strain_shear);
+axis equal tight;
+shading flat;
+colorbar;
+title('shear strain');
+xlabel('X coordinate');
+ylabel('Y coordinate');
+
+% %%
+%Graphic stress_x
+pcolor(X, Y, stress_x);
+axis equal tight;
+shading flat;
+colorbar;
+title('stress_x');
+xlabel('X coordinate');
+ylabel('Y coordinate');
+
+% %%
+%Graphic stress_y
+pcolor(X, Y, stress_y);
+axis equal tight;
+shading flat;
+colorbar;
+title('stress_y');
+xlabel('X coordinate');
+ylabel('Y coordinate');
+
+
+% %%
+%Graphic shear stress
+pcolor(X, Y, tau_x_y);
+axis equal tight;
+shading flat;
+colorbar;
+title('shear stress');
+xlabel('X coordinate');
+ylabel('Y coordinate');
 
 % %%
 %Coordinates with displacements 
@@ -337,7 +521,6 @@ y_points = Y_grid_tra(:);
 u = D(1:2:end);
 v = D(2:2:end);
 displacement_scale = 1000;%to diferentiate te results
-
 %Displacements in x and y 
 x_displaced = x_points +u*displacement_scale;
 y_displaced = y_points +v*displacement_scale;
