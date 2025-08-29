@@ -4,7 +4,7 @@ This project implements the Finite Element Method (FEM) for 2D plates using Cons
 The solution corresponds to the problem illustrated in figure 6.16.
 ![Figure 1](figure1.JPG)
 
-This problem is based on chapter 6.5 of the book:  
+This problem comes from the chapter 6.5 of the book:  
 *A First Course in the Finite Element Method* by **Daryl L. Logan**.
 
 ## Features
@@ -56,6 +56,7 @@ Some Expected outputs include:
 - Deformed mesh grid 
 
 Example results:
+
 Displacements in x
 ![Displacement in x](figure1_u_x_y_example.JPG)
 Strain in x
