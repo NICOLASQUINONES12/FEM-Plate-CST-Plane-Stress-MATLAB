@@ -14,7 +14,7 @@
 % ---
 
 % %% [markdown]
-% # A Finite Element Solution for a plate with MATLAB code.
+% # A Finite Element Solution for a plate with MATLAB code asumming plane stress. 
 
 % %% [markdown]
 % The problem is show in the figure 6-16. 
@@ -23,11 +23,14 @@
 % ![Figure 1](figure1.JPG)
 
 % %% [markdown]
-% This problem is show in the chapter 6.5 of the book: *A firts Course in the Finite Element Method* written by Daryl L. Logan. In this 
-% chapter a solution is make by subdivided the plate in two CST. The purpose of this project is to make more divisions considering 400 CST and see the results. 
+% This problem comes from the chapter 6.5 of the book: *A firts Course in the Finite Element Method* written by Daryl L. Logan. In this 
+% chapter a solution is make by subdivided the plate in two CST. The purpose of this project is to make a code that can performed more divisions. 
 
 % %% [markdown]
 % ## Input Variables
+
+% %% [markdown]
+% Here you can change the variables. 
 
 % %%
 % Geometry definition 
@@ -47,11 +50,19 @@ x0 = 0;
 y0 = 0;
 x1 = 20;
 y1 = 10; 
-x = linspace(x0,x1,n_x+1); 
-y = linspace(y0,y1,n_y+1); 
 %Surface Forces
 p = 1000; %Asumming that positive values are for traction and negative values for comprension 
+%At the end of the code is observed a graphic of deformation of the nodes, with the following variable you can change the displacement scale in order 
+% to see the difference between the original nodes and the displaced nodes more clearly. 
+displacement_scale = 1000;
 
+
+% %% [markdown]
+% ## Important notes of the FEM with CST elements
+
+% %% [markdown]
+% - When a large number of CST elements is considered, the model becomes stiffer than it should be. At the following section, the displacement in $x$ and the strain in $x$ as a single element model are shown. It can be observed that for large $n$ values such as 20 or 25 CST elements, the displacement in $x$ and the strain in $x$ are lower than the solution with the single-element model.
+% - It is recommended to use 10 divisions in x and y to have an accurate solution.
 
 % %% [markdown]
 % ## Solution as approximation of one element 
@@ -74,6 +85,7 @@ displacement_x_one_element
 % $$
 % \epsilon = \frac{\delta}{L}
 % $$
+% This value is situable for strain in x ($\epsilon_{x}$) in the graphics.  
 
 % %%
 strain_x_one_element = displacement_x_one_element/L; 
@@ -88,6 +100,10 @@ strain_x_one_element
 % The following image shows the CST mesh for this assembly.
 
 % %%
+%This code is to divided the plate in x and y. It must be performed once and it is valid for all the code. 
+x = linspace(x0,x1,n_x+1); 
+y = linspace(y0,y1,n_y+1); 
+%-------------------------------------------------%
 if (n_x<=25) || (n_y<=25)
     [X_gr, Y_gr] = meshgrid(x,y);
     % Horizontal lines 
@@ -254,10 +270,10 @@ end
 %Solution of the equation Q = K*D
 %--------------------------------------------------------------------------------%
 
-%We subdivided the matrices 
+%The matrices are subdivided
 %u is used for unknown and k for known 
 D_k_positions = find(~isnan(D)); %The displacements that are imposed
-D_u_positions = find(isnan(D)); %The displacements that we don't known
+D_u_positions = find(isnan(D)); %The displacements that are not known
 
 K_uu = K(D_u_positions,D_u_positions);
 K_uk = K(D_u_positions,D_k_positions);
@@ -281,6 +297,7 @@ Q(D_k_positions) = Q_u;
 %In this code is calculate the displacements, strains and stresses inside each element
 %--------------------------------------------------------------------------------%
 
+%Global matrices 
 U_x_y = zeros(n_y*n_element_y + 1, n_x*n_element_x + 1);
 V_x_y = zeros(n_y*n_element_y + 1, n_x*n_element_x + 1);
 strain_x = zeros(n_y*n_element_y + 1,n_x*n_element_x + 1);
@@ -289,7 +306,7 @@ strain_shear = zeros(n_y*n_element_y + 1,n_x*n_element_x + 1);
 stress_x = zeros(n_y*n_element_y + 1,n_x*n_element_x + 1);
 stress_y = zeros(n_y*n_element_y + 1,n_x*n_element_x + 1);
 tau_x_y = zeros(n_y*n_element_y + 1,n_x*n_element_x + 1); 
-%It can be calculate only once: 
+%It is calculated only once: 
 C = constitutive_matrix(E,v);
 
 for i = 1:(n_x)
@@ -508,9 +525,11 @@ title('shear stress');
 xlabel('X coordinate');
 ylabel('Y coordinate');
 
-% %%
-%Coordinates with displacements 
+% %% [markdown]
+% # Deformation of the plate 
 
+% %%
+%Here the deformation of the plate is observed through the displacement of the nodes. 
 %Original Coordinates
 [X_grid,Y_grid] = meshgrid(x,y);
 X_grid_tra = X_grid';
@@ -520,7 +539,7 @@ y_points = Y_grid_tra(:);
 %Displacements of u for x with corresponds to the odd dfos and v for y with even dfos. 
 u = D(1:2:end);
 v = D(2:2:end);
-displacement_scale = 1000;%to diferentiate te results
+
 %Displacements in x and y 
 x_displaced = x_points +u*displacement_scale;
 y_displaced = y_points +v*displacement_scale;
@@ -535,13 +554,13 @@ hold off;
 
 %Titles, axes titles, legends and texts
 
-h = title('Original Grid vs Deformed Grid', 'Units', 'Normalized');
+h = title('Original Nodes vs Deformed Nodes', 'Units', 'Normalized');
 set(h, 'Position', [0.5, 1.05, 0]);
 
 xlabel('X coordinates','FontSize', 12);
 ylabel('Y coordinates','FontSize', 12);
 legend('Original nodes','Deformed nodes');
 y_text_position = min(y_points) - (max(y_points) - min(y_points)) * 0.1; 
-text(min(x_points), y_text_position, sprintf('Displacement Scale: %d', displacement_scale), 'FontSize', 10, 'Interpreter', 'none');
+text(min(x_points+1), y_text_position, sprintf('Displacement Scale: %d', displacement_scale), 'FontSize', 10, 'Interpreter', 'none');
 
 % %%

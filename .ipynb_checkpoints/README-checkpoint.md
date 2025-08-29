@@ -52,7 +52,7 @@ Example results:
 ![Strain in x.](figure2_strain_x_example.JPG)
 ![Deformed mesh grid.](figure_3_deformed_nodes_examples.JPG)
 
-## Repository Structure
+Repository Structure
 
 ├── fem_cst.ipynb                # Main Jupyter Notebook
 ├── fem_cst.m                    # Equivalent MATLAB script
@@ -68,11 +68,3 @@ Example results:
 ├── figure3_deformed_nodes_example.JPG # Example result (deformed nodes)
 └── README.md                     # Project documentation
 
-## Reproducibility
-
-- Clone this repository.
-- Open the MATLAB script or notebook.
-- Run all cells and compare results with the included images.
-- 
-## Author
-Developed by Nicolas Quiñones 
